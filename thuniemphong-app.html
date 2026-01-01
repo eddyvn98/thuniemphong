@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thư Niêm Phong | Gửi thông điệp đến tương lai</title>
+    <meta name="description" content="Tạo tin nhắn được mã hóa trong mã QR và chỉ có thể mở vào một ngày được chọn trong tương lai.">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- CryptoJS for encryption -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    
+    <!-- QRCode.js for generating QR codes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- html5-qrcode for scanning QR codes -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        /* Custom animations */
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in {
+            animation: fade-in 0.8s ease-out;
+        }
+        
+        /* Custom button styles */
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem 2rem;
+            background-color: #2563eb;
+            color: white;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            transform: scale(1.05);
+        }
+        
+        .btn-secondary {
+            width: 100%;
+            padding: 0.75rem 2rem;
+            background-color: white;
+            color: #334155;
+            border-radius: 9999px;
+            font-weight: 600;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #f8fafc;
+            transform: scale(1.05);
+        }
+        
+        .btn-danger {
+            width: 100%;
+            padding: 0.75rem 2rem;
+            background-color: #dc2626;
+            color: white;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-danger:hover {
+            background-color: #b91c1c;
+            transform: scale(1.05);
+        }
+        
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* Hide elements */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* QR Scanner styles */
+        #reader {
+            width: 100%;
+            border: none;
+        }
+        
+        #reader__scan_region {
+            border-radius: 1rem !important;
+        }
+        
+        #reader__dashboard_section {
+            display: none !important;
+        }
+        
+        #reader video {
+            border-radius: 1rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen antialiased flex flex-col items-center bg-slate-50">
+    
+    <!-- Main Container -->
+    <div class="w-full max-w-md min-h-screen flex flex-col shadow-2xl shadow-slate-200/50 bg-white">
+        <main class="flex-grow flex flex-col" id="app-container">
+            <!-- Content will be dynamically loaded here -->
+        </main>
+    </div>
+    
+    <script>
+        // Global variables
+        let html5QrCode = null;
+        let cameraStream = null;
+        
+        // Router (hash-based for file:// protocol support)
+        const routes = {
+            '': renderHome,
+            'create': renderCreate,
+            'scan': renderScan,
+            'view': renderView
+        };
+        
+        function navigate(path) {
+            // Stop camera if active
+            stopCamera();
+            
+            // Update hash
+            window.location.hash = path;
+        }
+        
+        function router() {
+            // Get hash without #
+            const hash = window.location.hash.slice(1);
+            
+            // Render page
+            const render = routes[hash] || routes[''];
+            render();
+        }
+        
+        // Stop camera helper
+        function stopCamera() {
+            // Stop html5-qrcode scanner
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    console.log('Camera stopped');
+                }).catch(err => {
+                    console.error('Error stopping camera:', err);
+                });
+            }
+            
+            // Stop any remaining media streams
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            // Clear video elements
+            const videos = document.querySelectorAll('video');
+            videos.forEach(video => {
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                    video.srcObject = null;
+                }
+            });
+        }
+        
+        // Render Home Page
+        function renderHome() {
+            const container = document.getElementById('app-container');
+            container.innerHTML = `
+                <div class="flex-grow overflow-y-auto">
+                    
+                    <!-- Hero Section -->
+                    <section class="min-h-screen flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-b from-blue-50/30 via-white to-white -z-10"></div>
+                        
+                        <div class="w-full max-w-2xl space-y-8 animate-fade-in">
+                            <!-- Logo -->
+                            <div class="relative">
+                                <div class="w-32 h-32 mx-auto rounded-full bg-slate-50 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden">
+                                    <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-white"></div>
+                                    <div class="relative z-10 text-6xl">📮</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Heading -->
+                            <div class="space-y-4">
+                                <h1 class="text-5xl font-black tracking-tight text-slate-900">Thư Niêm Phong</h1>
+                                <p class="text-2xl text-slate-600 font-medium">Gửi một lời nhắn cho tương lai</p>
+                                <p class="text-lg text-slate-400">Chỉ mở ra khi tới đúng lúc</p>
+                            </div>
+                            
+                            <!-- CTA Buttons -->
+                            <div class="space-y-4 pt-4">
+                                <button onclick="navigate('create')" class="btn-primary shadow-xl shadow-blue-600/20 text-lg py-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14"></path>
+                                        <path d="M12 5v14"></path>
+                                    </svg>
+                                    <span>Tạo thư niêm phong</span>
+                                </button>
+                                <button onclick="navigate('scan')" class="btn-secondary text-lg py-4">
+                                    <span>Quét & Mở thư</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Scroll Down Hint -->
+                            <div class="pt-12 animate-bounce">
+                                <p class="text-xs text-slate-300 uppercase tracking-wider">Cuộn xuống để hiểu thêm</p>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- How It Works Section -->
+                    <section class="py-20 px-6 bg-slate-50">
+                        <div class="max-w-4xl mx-auto">
+                            <h2 class="text-3xl font-bold text-center mb-16 text-slate-900">Cách hoạt động (rất đơn giản)</h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                                <!-- Step 1 -->
+                                <div class="text-center space-y-4">
+                                    <div class="w-20 h-20 mx-auto rounded-full bg-blue-100 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                                            <path d="M13 21h8"></path>
+                                            <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <h3 class="font-bold text-slate-900">1. Viết lời nhắn</h3>
+                                        <p class="text-sm text-slate-500 leading-relaxed">Lời dặn, lời xin lỗi, hay điều bạn chưa muốn nói bây giờ</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Step 2 -->
+                                <div class="text-center space-y-4">
+                                    <div class="w-20 h-20 mx-auto rounded-full bg-blue-100 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                                            <path d="M8 2v4"></path>
+                                            <path d="M16 2v4"></path>
+                                            <rect width="18" height="18" x="3" y="4" rx="2"></rect>
+                                            <path d="M3 10h18"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <h3 class="font-bold text-slate-900">2. Chọn ngày mở</h3>
+                                        <p class="text-sm text-slate-500 leading-relaxed">Trước ngày đó, không ai có thể đọc</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Step 3 -->
+                                <div class="text-center space-y-4">
+                                    <div class="w-20 h-20 mx-auto rounded-full bg-blue-100 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                                            <rect width="5" height="5" x="3" y="3" rx="1"></rect>
+                                            <rect width="5" height="5" x="16" y="3" rx="1"></rect>
+                                            <rect width="5" height="5" x="3" y="16" rx="1"></rect>
+                                            <path d="M21 16h-3a2 2 0 0 0-2 2v3"></path>
+                                            <path d="M21 21v.01"></path>
+                                            <path d="M12 7v3a2 2 0 0 1-2 2H7"></path>
+                                            <path d="M3 12h.01"></path>
+                                            <path d="M12 3h.01"></path>
+                                            <path d="M12 16v.01"></path>
+                                            <path d="M16 12h1"></path>
+                                            <path d="M21 12v.01"></path>
+                                            <path d="M12 21v-1"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <h3 class="font-bold text-slate-900">3. Nhận mã QR</h3>
+                                        <p class="text-sm text-slate-500 leading-relaxed">Giữ lại, in ra, hoặc gửi cho người bạn muốn</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Step 4 -->
+                                <div class="text-center space-y-4">
+                                    <div class="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                                            <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                                            <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <h3 class="font-bold text-slate-900">4. Tới ngày → mở</h3>
+                                        <p class="text-sm text-slate-500 leading-relaxed">Quét mã QR và đọc nội dung</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- Important Info Section -->
+                    <section class="py-20 px-6 bg-white">
+                        <div class="max-w-4xl mx-auto">
+                            <div class="text-center mb-12">
+                                <h2 class="text-3xl font-bold text-slate-900 mb-4">Điều quan trọng bạn cần biết</h2>
+                                <p class="text-slate-500 max-w-2xl mx-auto">
+                                    Đây không phải lỗi. Đây là cách để đảm bảo <strong>không ai có quyền đọc thay bạn</strong>.
+                                </p>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="p-6 rounded-3xl border-2 border-slate-100 bg-slate-50 space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600">
+                                                <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"></path>
+                                            </svg>
+                                        </div>
+                                        <h3 class="font-bold text-slate-900">Không lưu nội dung</h3>
+                                    </div>
+                                    <p class="text-sm text-slate-600 leading-relaxed pl-13">Thư của bạn chỉ tồn tại trong mã QR</p>
+                                </div>
+                                
+                                <div class="p-6 rounded-3xl border-2 border-slate-100 bg-slate-50 space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600">
+                                                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                            </svg>
+                                        </div>
+                                        <h3 class="font-bold text-slate-900">Không lưu mật khẩu</h3>
+                                    </div>
+                                    <p class="text-sm text-slate-600 leading-relaxed pl-13">Quên mật khẩu = mất vĩnh viễn</p>
+                                </div>
+                                
+                                <div class="p-6 rounded-3xl border-2 border-slate-100 bg-slate-50 space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600">
+                                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="9" cy="7" r="4"></circle>
+                                                <line x1="17" x2="22" y1="8" y2="13"></line>
+                                                <line x1="22" x2="17" y1="8" y2="13"></line>
+                                            </svg>
+                                        </div>
+                                        <h3 class="font-bold text-slate-900">Không có tài khoản</h3>
+                                    </div>
+                                    <p class="text-sm text-slate-600 leading-relaxed pl-13">Không đăng ký, không đăng nhập</p>
+                                </div>
+                                
+                                <div class="p-6 rounded-3xl border-2 border-slate-100 bg-slate-50 space-y-3">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600">
+                                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path>
+                                                <path d="M12 9v4"></path>
+                                                <path d="M12 17h.01"></path>
+                                            </svg>
+                                        </div>
+                                        <h3 class="font-bold text-slate-900">Không có khôi phục</h3>
+                                    </div>
+                                    <p class="text-sm text-slate-600 leading-relaxed pl-13">Mất mã QR = mất vĩnh viễn</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- Use Cases Section -->
+                    <section class="py-20 px-6 bg-slate-50">
+                        <div class="max-w-5xl mx-auto">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <!-- Do's -->
+                                <div class="space-y-6">
+                                    <div class="flex items-center gap-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="m9 12 2 2 4-4"></path>
+                                        </svg>
+                                        <h2 class="text-2xl font-bold text-slate-900">Nên dùng khi</h2>
+                                    </div>
+                                    <div class="space-y-4">
+                                        <div class="p-5 bg-white rounded-2xl border border-green-100 shadow-sm">
+                                            <p class="text-slate-700 leading-relaxed">
+                                                Muốn nói điều gì đó <strong>nhưng chưa phải lúc</strong>
+                                            </p>
+                                        </div>
+                                        <div class="p-5 bg-white rounded-2xl border border-green-100 shadow-sm">
+                                            <p class="text-slate-700 leading-relaxed">
+                                                Để lại lời dặn <strong>phòng khi có chuyện</strong>
+                                            </p>
+                                        </div>
+                                        <div class="p-5 bg-white rounded-2xl border border-green-100 shadow-sm">
+                                            <p class="text-slate-700 leading-relaxed">
+                                                Giữ thông tin <strong>không ai được đọc sớm</strong>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Don'ts -->
+                                <div class="space-y-6">
+                                    <div class="flex items-center gap-3">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="m15 9-6 6"></path>
+                                            <path d="m9 9 6 6"></path>
+                                        </svg>
+                                        <h2 class="text-2xl font-bold text-slate-900">Không nên dùng khi</h2>
+                                    </div>
+                                    <div class="space-y-4">
+                                        <div class="p-5 bg-white rounded-2xl border border-red-100 shadow-sm">
+                                            <p class="text-slate-700 leading-relaxed">Cần khôi phục hoặc hỗ trợ</p>
+                                        </div>
+                                        <div class="p-5 bg-white rounded-2xl border border-red-100 shadow-sm">
+                                            <p class="text-slate-700 leading-relaxed">Không chấp nhận việc "mất là mất"</p>
+                                        </div>
+                                        <div class="p-5 bg-white rounded-2xl border border-red-100 shadow-sm">
+                                            <p class="text-slate-700 leading-relaxed">Muốn chỉnh sửa sau khi tạo</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- Quote Section -->
+                    <section class="py-20 px-6 bg-white">
+                        <div class="max-w-3xl mx-auto text-center space-y-8">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-blue-600">
+                                <path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path>
+                                <path d="M20 2v4"></path>
+                                <path d="M22 4h-4"></path>
+                                <circle cx="4" cy="20" r="2"></circle>
+                            </svg>
+                            <blockquote class="text-2xl md:text-3xl font-medium text-slate-700 leading-relaxed italic">
+                                "Ứng dụng không giữ bí mật của bạn.<br>Ứng dụng chỉ giúp bạn giữ lời hứa với thời gian."
+                            </blockquote>
+                        </div>
+                    </section>
+                    
+                    <!-- Final CTA Section -->
+                    <section class="py-20 px-6 bg-gradient-to-b from-blue-50 to-white">
+                        <div class="max-w-2xl mx-auto text-center space-y-8">
+                            <h2 class="text-3xl font-bold text-slate-900">Bắt đầu tạo thư niêm phong</h2>
+                            <p class="text-slate-500">Không cần tài khoản. Không lưu dữ liệu.</p>
+                            <div class="space-y-4">
+                                <button onclick="navigate('create')" class="btn-primary shadow-xl shadow-blue-600/20 text-lg py-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M5 12h14"></path>
+                                        <path d="M12 5v14"></path>
+                                    </svg>
+                                    <span>Tạo thư niêm phong ngay</span>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                    
+                </div>
+            `;
+        }
+        
+        // Render Create Page
+        function renderCreate() {
+            const container = document.getElementById('app-container');
+            container.innerHTML = `
+                <div class="flex-grow overflow-y-auto bg-white">
+                    <!-- Header -->
+                    <header class="p-4 flex items-center border-b border-slate-100 sticky top-0 bg-white z-10">
+                        <button onclick="navigate('')" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m15 18-6-6 6-6"></path>
+                            </svg>
+                        </button>
+                        <h1 class="flex-1 text-center font-bold text-lg pr-10">Tạo Thư Niêm Phong</h1>
+                    </header>
+                    
+                    <!-- Form -->
+                    <div class="p-6 space-y-6 max-w-2xl mx-auto">
+                        <!-- Message Input -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-slate-700">Lời nhắn của bạn</label>
+                            <textarea 
+                                id="message" 
+                                rows="6" 
+                                class="w-full px-4 py-3 border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:outline-none resize-none"
+                                placeholder="Viết điều bạn muốn gửi đến tương lai..."
+                            ></textarea>
+                        </div>
+                        
+                        <!-- Date Input -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-slate-700">Ngày có thể mở</label>
+                            <input 
+                                type="date" 
+                                id="unlock-date" 
+                                class="w-full px-4 py-3 border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:outline-none"
+                                min="${new Date().toISOString().split('T')[0]}"
+                            />
+                            <p class="text-xs text-slate-400">Thư chỉ có thể mở từ ngày này trở đi</p>
+                        </div>
+                        
+                        <!-- Password Input -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-slate-700">Mật khẩu (tùy chọn)</label>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                class="w-full px-4 py-3 border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:outline-none"
+                                placeholder="Để trống nếu không cần mật khẩu"
+                            />
+                            <p class="text-xs text-slate-400">⚠️ Không lưu mật khẩu - quên = mất vĩnh viễn</p>
+                        </div>
+                        
+                        <!-- Create Button -->
+                        <button onclick="createLetter()" class="btn-primary shadow-lg text-lg py-4 mt-8">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect width="5" height="5" x="3" y="3" rx="1"></rect>
+                                <rect width="5" height="5" x="16" y="3" rx="1"></rect>
+                                <rect width="5" height="5" x="3" y="16" rx="1"></rect>
+                                <path d="M21 16h-3a2 2 0 0 0-2 2v3"></path>
+                                <path d="M21 21v.01"></path>
+                                <path d="M12 7v3a2 2 0 0 1-2 2H7"></path>
+                                <path d="M3 12h.01"></path>
+                                <path d="M12 3h.01"></path>
+                                <path d="M12 16v.01"></path>
+                                <path d="M16 12h1"></path>
+                                <path d="M21 12v.01"></path>
+                                <path d="M12 21v-1"></path>
+                            </svg>
+                            <span>Tạo mã QR</span>
+                        </button>
+                    </div>
+                    
+                    <!-- QR Code Result (hidden initially) -->
+                    <div id="qr-result" class="hidden p-6 space-y-6 max-w-2xl mx-auto">
+                        <div class="p-8 bg-gradient-to-b from-blue-50 to-white rounded-3xl border-2 border-blue-100 space-y-6">
+                            <div class="text-center space-y-2">
+                                <div class="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                                        <path d="M20 6 9 17l-5-5"></path>
+                                    </svg>
+                                </div>
+                                <h2 class="text-2xl font-bold text-slate-900">Thư đã được niêm phong!</h2>
+                                <p class="text-slate-500">Lưu mã QR này để mở khi đến ngày</p>
+                            </div>
+                            
+                            <!-- QR Code Display -->
+                            <div class="bg-white p-6 rounded-2xl flex justify-center" id="qrcode"></div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="space-y-3">
+                                <button onclick="downloadQR()" class="btn-primary">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" x2="12" y1="15" y2="3"></line>
+                                    </svg>
+                                    <span>Tải xuống mã QR</span>
+                                </button>
+                                <button onclick="navigate('')" class="btn-secondary">
+                                    <span>Về trang chủ</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Warning -->
+                            <div class="p-4 bg-red-50 border-2 border-red-100 rounded-xl">
+                                <p class="text-sm text-red-700 text-center">
+                                    ⚠️ <strong>Mất mã QR = mất thư vĩnh viễn</strong><br>
+                                    Hãy lưu cẩn thận!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Create Letter Function
+        function createLetter() {
+            const message = document.getElementById('message').value.trim();
+            const unlockDate = document.getElementById('unlock-date').value;
+            const password = document.getElementById('password').value;
+            
+            // Validation
+            if (!message) {
+                alert('Vui lòng nhập lời nhắn!');
+                return;
+            }
+            
+            if (!unlockDate) {
+                alert('Vui lòng chọn ngày mở!');
+                return;
+            }
+            
+            // Create data object
+            const data = {
+                message: message,
+                unlockDate: unlockDate,
+                createdAt: new Date().toISOString()
+            };
+            
+            // Encrypt if password provided
+            let qrData;
+            if (password) {
+                const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), password).toString();
+                qrData = JSON.stringify({
+                    encrypted: true,
+                    data: encrypted
+                });
+            } else {
+                qrData = JSON.stringify({
+                    encrypted: false,
+                    data: data
+                });
+            }
+            
+            // Clear previous QR code
+            const qrcodeElement = document.getElementById('qrcode');
+            qrcodeElement.innerHTML = '';
+            
+            // Generate QR code
+            new QRCode(qrcodeElement, {
+                text: qrData,
+                width: 256,
+                height: 256,
+                colorDark: "#1e293b",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+            
+            // Show result
+            document.getElementById('qr-result').classList.remove('hidden');
+            
+            // Scroll to result
+            setTimeout(() => {
+                document.getElementById('qr-result').scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+        }
+        
+        // Download QR Code
+        function downloadQR() {
+            const canvas = document.querySelector('#qrcode canvas');
+            if (canvas) {
+                const url = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = `thu-niem-phong-${Date.now()}.png`;
+                link.href = url;
+                link.click();
+            }
+        }
+        
+        // Render Scan Page
+        function renderScan() {
+            const container = document.getElementById('app-container');
+            container.innerHTML = `
+                <div class="min-h-screen bg-black flex flex-col">
+                    <!-- Header -->
+                    <header class="p-4 text-white flex justify-between z-10 w-full bg-black">
+                        <button onclick="navigate('')" class="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m15 18-6-6 6-6"></path>
+                            </svg>
+                        </button>
+                        <span class="font-medium">Đang quét...</span>
+                        <div class="w-6"></div>
+                    </header>
+                    
+                    <!-- Scanner Area -->
+                    <div class="flex-1 flex items-center justify-center overflow-hidden w-full relative p-6">
+                        <div class="w-full max-w-sm">
+                            <div id="reader" class="rounded-xl overflow-hidden"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Button -->
+                    <div class="p-8 flex justify-center pb-12 w-full bg-black">
+                        <input type="file" accept="image/*" hidden id="qr-file" onchange="handleFileSelect(event)"/>
+                        <label for="qr-file" class="flex flex-col items-center gap-3 text-white/50 hover:text-white transition-colors cursor-pointer group">
+                            <div class="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center border border-white/10 group-hover:border-white/30 group-hover:bg-white/20 transition-all">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                                    <circle cx="9" cy="9" r="2"></circle>
+                                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+                                </svg>
+                            </div>
+                            <span class="text-xs font-medium tracking-wide">Chọn từ thư viện</span>
+                        </label>
+                    </div>
+                </div>
+            `;
+            
+            // Initialize scanner after DOM is ready
+            setTimeout(() => {
+                initScanner();
+            }, 100);
+        }
+        
+        // Initialize QR Scanner
+        function initScanner() {
+            html5QrCode = new Html5Qrcode("reader");
+            
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+            
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanError
+            ).catch(err => {
+                console.error('Camera error:', err);
+                alert('Không thể truy cập camera. Vui lòng cho phép quyền camera hoặc chọn ảnh từ thư viện.');
+            });
+        }
+        
+        // Handle file upload
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Stop camera before processing file
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    processImageFile(file);
+                }).catch(err => {
+                    console.error('Error stopping camera:', err);
+                    processImageFile(file);
+                });
+            } else {
+                processImageFile(file);
+            }
+        }
+        
+        // Process image file for QR code
+        function processImageFile(file) {
+            html5QrCode.scanFile(file, true)
+                .then(decodedText => {
+                    onScanSuccess(decodedText);
+                })
+                .catch(err => {
+                    console.error('Scan error:', err);
+                    alert('Không tìm thấy mã QR trong ảnh. Vui lòng thử ảnh khác.');
+                    // Restart camera
+                    setTimeout(() => {
+                        initScanner();
+                    }, 500);
+                });
+        }
+        
+        // On scan success
+        function onScanSuccess(decodedText) {
+            console.log('Scanned:', decodedText);
+            
+            // Stop scanner
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().catch(err => console.error('Error stopping:', err));
+            }
+            
+            // Save scanned data and navigate to view page
+            sessionStorage.setItem('scannedData', decodedText);
+            navigate('view');
+        }
+        
+        // On scan error (ignore)
+        function onScanError(error) {
+            // Ignore continuous scan errors
+        }
+        
+        // Render View Page
+        function renderView() {
+            const scannedData = sessionStorage.getItem('scannedData');
+            
+            if (!scannedData) {
+                navigate('scan');
+                return;
+            }
+            
+            const container = document.getElementById('app-container');
+            
+            try {
+                const parsed = JSON.parse(scannedData);
+                
+                if (parsed.encrypted) {
+                    // Show password input
+                    renderPasswordInput(parsed.data);
+                } else {
+                    // Show letter directly
+                    renderLetter(parsed.data);
+                }
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="flex-grow flex items-center justify-center p-6">
+                        <div class="text-center space-y-6 max-w-md">
+                            <div class="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-600">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="15" x2="9" y1="9" y2="15"></line>
+                                    <line x1="9" x2="15" y1="9" y2="15"></line>
+                                </svg>
+                            </div>
+                            <h2 class="text-2xl font-bold text-slate-900">Mã QR không hợp lệ</h2>
+                            <p class="text-slate-500">Đây không phải mã QR từ Thư Niêm Phong</p>
+                            <button onclick="navigate('scan')" class="btn-primary">
+                                <span>Quét lại</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Render password input
+        function renderPasswordInput(encryptedData) {
+            const container = document.getElementById('app-container');
+            container.innerHTML = `
+                <div class="flex-grow flex items-center justify-center p-6 bg-gradient-to-b from-blue-50 to-white">
+                    <div class="w-full max-w-md space-y-6">
+                        <div class="text-center space-y-2">
+                            <div class="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600">
+                                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                            </div>
+                            <h2 class="text-2xl font-bold text-slate-900">Thư được bảo vệ</h2>
+                            <p class="text-slate-500">Nhập mật khẩu để mở</p>
+                        </div>
+                        
+                        <div class="p-6 bg-white rounded-3xl border-2 border-slate-100 shadow-lg space-y-4">
+                            <input 
+                                type="password" 
+                                id="decrypt-password" 
+                                class="w-full px-4 py-3 border-2 border-slate-200 rounded-2xl focus:border-blue-500 focus:outline-none"
+                                placeholder="Nhập mật khẩu"
+                                onkeypress="if(event.key==='Enter') decryptLetter('${encryptedData.replace(/'/g, "\\'")}');"
+                            />
+                            <button onclick="decryptLetter('${encryptedData.replace(/'/g, "\\'")}');" class="btn-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                                </svg>
+                                <span>Mở thư</span>
+                            </button>
+                        </div>
+                        
+                        <button onclick="navigate('')" class="btn-secondary">
+                            <span>Hủy</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Decrypt letter
+        function decryptLetter(encryptedData) {
+            const password = document.getElementById('decrypt-password').value;
+            
+            if (!password) {
+                alert('Vui lòng nhập mật khẩu!');
+                return;
+            }
+            
+            try {
+                const decrypted = CryptoJS.AES.decrypt(encryptedData, password);
+                const decryptedText = decrypted.toString(CryptoJS.enc.Utf8);
+                
+                if (!decryptedText) {
+                    alert('Mật khẩu không đúng!');
+                    return;
+                }
+                
+                const data = JSON.parse(decryptedText);
+                renderLetter(data);
+            } catch (error) {
+                alert('Mật khẩu không đúng!');
+            }
+        }
+        
+        // Render letter content
+        function renderLetter(data) {
+            const container = document.getElementById('app-container');
+            
+            // Check if unlock date has passed
+            const unlockDate = new Date(data.unlockDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            unlockDate.setHours(0, 0, 0, 0);
+            
+            const isLocked = today < unlockDate;
+            
+            if (isLocked) {
+                // Show locked message
+                const daysLeft = Math.ceil((unlockDate - today) / (1000 * 60 * 60 * 24));
+                container.innerHTML = `
+                    <div class="flex-grow flex items-center justify-center p-6 bg-gradient-to-b from-orange-50 to-white">
+                        <div class="w-full max-w-md space-y-6 text-center">
+                            <div class="w-24 h-24 mx-auto bg-orange-100 rounded-full flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-600">
+                                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <h2 class="text-3xl font-bold text-slate-900">Chưa đến lúc</h2>
+                                <p class="text-lg text-slate-600">Thư này chỉ có thể mở vào</p>
+                                <p class="text-2xl font-bold text-orange-600">${unlockDate.toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            </div>
+                            
+                            <div class="p-6 bg-white rounded-3xl border-2 border-orange-100 shadow-lg">
+                                <p class="text-4xl font-black text-orange-600">${daysLeft}</p>
+                                <p class="text-sm text-slate-500 mt-2">ngày nữa</p>
+                            </div>
+                            
+                            <div class="p-4 bg-orange-50 border-2 border-orange-100 rounded-xl">
+                                <p class="text-sm text-orange-700">
+                                    ⏰ Hãy kiên nhẫn. Điều tốt đẹp đáng chờ đợi.
+                                </p>
+                            </div>
+                            
+                            <button onclick="navigate('')" class="btn-primary bg-orange-600 hover:bg-orange-700">
+                                <span>Về trang chủ</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Show message
+                const createdDate = new Date(data.createdAt);
+                container.innerHTML = `
+                    <div class="flex-grow overflow-y-auto p-6 bg-gradient-to-b from-green-50 to-white">
+                        <div class="max-w-2xl mx-auto space-y-6">
+                            <div class="text-center space-y-2">
+                                <div class="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                                    </svg>
+                                </div>
+                                <h2 class="text-2xl font-bold text-slate-900">Thư đã mở!</h2>
+                                <p class="text-sm text-slate-400">Được tạo ${createdDate.toLocaleDateString('vi-VN')}</p>
+                            </div>
+                            
+                            <div class="p-8 bg-white rounded-3xl border-2 border-green-100 shadow-xl">
+                                <div class="prose prose-slate max-w-none">
+                                    <p class="text-lg leading-relaxed text-slate-700 whitespace-pre-wrap">${escapeHtml(data.message)}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="p-4 bg-green-50 border-2 border-green-100 rounded-xl text-center">
+                                <p class="text-sm text-green-700">
+                                    💚 Lời nhắn này đến từ quá khứ
+                                </p>
+                            </div>
+                            
+                            <button onclick="navigate('')" class="btn-primary bg-green-600 hover:bg-green-700">
+                                <span>Về trang chủ</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Escape HTML helper
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Handle hash change
+        window.addEventListener('hashchange', router);
+        
+        // Initial render
+        window.addEventListener('DOMContentLoaded', router);
+        
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+        });
+    </script>
+    
+</body>
+</html>

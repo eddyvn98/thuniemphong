@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thư Niêm Phong | Gửi thông điệp đến tương lai</title>
+    <meta name="description" content="Tạo tin nhắn được mã hóa trong mã QR và chỉ có thể mở vào một ngày được chọn trong tương lai.">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- QRCode.js for generating QR codes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <!-- html5-qrcode for scanning QR codes -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
+    <!-- html2canvas for capturing card as image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen antialiased flex flex-col items-center bg-slate-50">
+    
+    <!-- Main Container -->
+    <div class="w-full max-w-md min-h-screen flex flex-col shadow-2xl shadow-slate-200/50 bg-white">
+        <main class="flex-grow flex flex-col" id="app-container">
+            <!-- Content will be dynamically loaded here -->
+        </main>
+    </div>
+    
+    <!-- Core Libraries (load first) -->
+    <script src="js/lib/format.js?v=2"></script>
+    <script src="js/lib/crypto.js?v=2"></script>
+    
+    <!-- Utilities -->
+    <script src="js/utils/camera.js?v=2"></script>
+    <script src="js/utils/qr.js?v=2"></script>
+    
+    <!-- Pages -->
+    <script src="js/pages/home.js?v=2"></script>
+    <script src="js/pages/onboarding.js?v=2"></script>
+    <script src="js/pages/editor.js?v=2"></script>
+    <script src="js/pages/setup.js?v=2"></script>
+    <script src="js/pages/countdown.js?v=2"></script>
+    <script src="js/pages/success.js?v=2"></script>
+    <script src="js/pages/create.js?v=2"></script>
+    <script src="js/pages/scan.js?v=2"></script>
+    <script src="js/pages/view.js?v=2"></script>
+    
+    <!-- Router & App -->
+    <script src="js/router.js?v=2"></script>
+    <script src="js/app.js?v=2"></script>
+    
+</body>
+</html>
