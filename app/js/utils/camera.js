@@ -1,28 +1,40 @@
 /**
- * Camera management for QR scanning
+ * Camera management for QR scanning using ZXing
  * Handles camera lifecycle and prevents memory leaks
  */
 
-let html5QrCode = null;
-let cameraStream = null;
+let codeReader = null;
+let videoElement = null;
+let currentStream = null;
 
 /**
  * Stop all camera streams and cleanup
  */
 function stopCamera() {
-    // Stop html5-qrcode scanner
-    if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().then(() => {
-            console.log('📷 Camera stopped');
-        }).catch(err => {
-            console.error('❌ Error stopping camera:', err);
-        });
+    console.log('🛑 Stopping camera...');
+    
+    // Stop ZXing reader
+    if (codeReader) {
+        try {
+            codeReader.reset();
+        } catch (err) {
+            console.warn('Reset error:', err);
+        }
     }
     
-    // Stop any remaining media streams
-    if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-        cameraStream = null;
+    // Stop media stream
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => {
+            track.stop();
+            console.log('📷 Track stopped');
+        });
+        currentStream = null;
+    }
+    
+    // Clear video element
+    if (videoElement && videoElement.srcObject) {
+        videoElement.srcObject.getTracks().forEach(track => track.stop());
+        videoElement.srcObject = null;
     }
     
     // Clear all video elements
@@ -36,13 +48,15 @@ function stopCamera() {
 }
 
 /**
- * Initialize QR code scanner with camera
+ * Initialize QR code scanner with camera using ZXing
  */
-function initScanner() {
-    // Check if Html5Qrcode is available
-    if (typeof Html5Qrcode === 'undefined') {
-        console.error('❌ Html5Qrcode library not loaded');
-        alert('Thư viện quét QR chưa được tải. Vui lòng tải lại trang.');
+async function initScanner() {
+    console.log('📷 Initializing camera scanner...');
+    
+    // Check if ZXing is available
+    if (typeof ZXing === 'undefined') {
+        console.error('❌ ZXing library not loaded');
+        showCameraError('Thư viện quét QR chưa được tải. Vui lòng tải lại trang.');
         return;
     }
     
@@ -52,62 +66,89 @@ function initScanner() {
         return;
     }
     
-    html5QrCode = new Html5Qrcode("reader");
+    // Create video element
+    videoElement = document.createElement('video');
+    videoElement.setAttribute('autoplay', '');
+    videoElement.setAttribute('playsinline', '');
+    videoElement.style.width = '100%';
+    videoElement.style.maxWidth = '400px';
+    videoElement.style.borderRadius = '12px';
     
-    const config = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-        disableFlip: false,
-        rememberLastUsedCamera: true
-    };
+    readerElement.innerHTML = '';
+    readerElement.appendChild(videoElement);
     
-    // Request camera with back camera preference
-    const cameraConfig = { facingMode: { ideal: "environment" } };
+    // Create ZXing code reader
+    codeReader = new ZXing.BrowserMultiFormatReader();
     
-    html5QrCode.start(
-        cameraConfig,
-        config,
-        onScanSuccess,
-        onScanError
-    ).catch(err => {
-        console.error('📷 Camera start error:', err);
+    try {
+        // Get video devices
+        const videoInputDevices = await codeReader.listVideoInputDevices();
+        console.log('📷 Found cameras:', videoInputDevices.length);
         
-        // Try to get available cameras and use the first one
-        Html5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length > 0) {
-                console.log('📷 Found cameras:', devices.length);
-                // Use the last camera (usually back camera on mobile)
-                const cameraId = devices[devices.length - 1].id;
-                html5QrCode.start(
-                    cameraId,
-                    config,
-                    onScanSuccess,
-                    onScanError
-                ).catch(err2 => {
-                    console.error('📷 Camera start error (fallback):', err2);
-                    showCameraError();
-                });
-            } else {
-                showCameraError();
+        if (videoInputDevices.length === 0) {
+            throw new Error('No camera found');
+        }
+        
+        // Use back camera if available (last device is usually back camera on mobile)
+        const selectedDeviceId = videoInputDevices.length > 1 
+            ? videoInputDevices[videoInputDevices.length - 1].deviceId 
+            : videoInputDevices[0].deviceId;
+        
+        console.log('📷 Using camera:', selectedDeviceId);
+        
+        // Start decoding
+        const controls = await codeReader.decodeFromVideoDevice(
+            selectedDeviceId,
+            videoElement,
+            (result, error) => {
+                if (result) {
+                    console.log('✅ QR Code scanned:', result.getText());
+                    onScanSuccess(result.getText());
+                }
+                // Ignore errors (they happen continuously while scanning)
             }
-        }).catch(err2 => {
-            console.error('📷 Get cameras error:', err2);
-            showCameraError();
-        });
-    });
+        );
+        
+        // Store stream for cleanup
+        if (videoElement.srcObject) {
+            currentStream = videoElement.srcObject;
+        }
+        
+        console.log('📷 Camera started successfully');
+        
+    } catch (err) {
+        console.error('📷 Camera error:', err);
+        let errorMessage = 'Không thể truy cập camera.';
+        
+        if (err.name === 'NotAllowedError') {
+            errorMessage = 'Quyền camera bị từ chối. Vui lòng cho phép quyền camera trong cài đặt trình duyệt.';
+        } else if (err.name === 'NotFoundError') {
+            errorMessage = 'Không tìm thấy camera. Vui lòng kiểm tra thiết bị.';
+        } else if (err.name === 'NotReadableError') {
+            errorMessage = 'Camera đang được sử dụng bởi ứng dụng khác. Vui lòng đóng ứng dụng đó và thử lại.';
+        }
+        
+        showCameraError(errorMessage);
+    }
 }
 
 /**
  * Show camera error message
  */
-function showCameraError() {
+function showCameraError(message) {
     const readerElement = document.getElementById("reader");
     if (readerElement) {
         readerElement.innerHTML = `
             <div class="p-8 text-center text-white">
-                <p class="mb-4">Không thể truy cập camera</p>
-                <p class="text-sm text-white/70">Vui lòng cho phép quyền camera hoặc chọn ảnh từ thư viện bên dưới</p>
+                <div class="mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-red-400">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" x2="12" y1="8" y2="12"></line>
+                        <line x1="12" x2="12.01" y1="16" y2="16"></line>
+                    </svg>
+                </div>
+                <p class="mb-2 font-semibold">${message}</p>
+                <p class="text-sm text-white/70 mt-4">Bạn vẫn có thể chọn ảnh QR từ thư viện bên dưới</p>
             </div>
         `;
     }
@@ -120,35 +161,56 @@ function handleFileSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // CRITICAL: Stop camera before processing file
-    if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().then(() => {
-            processImageFile(file);
-        }).catch(err => {
-            console.error('Error stopping camera:', err);
-            processImageFile(file);
-        });
-    } else {
-        processImageFile(file);
-    }
+    console.log('📁 File selected:', file.name);
+    
+    // Stop camera before processing file
+    stopCamera();
+    
+    // Process image file
+    processImageFile(file);
 }
 
 /**
- * Process image file for QR code
+ * Process image file for QR code using ZXing
  */
-function processImageFile(file) {
-    html5QrCode.scanFile(file, true)
-        .then(decodedText => {
-            onScanSuccess(decodedText);
-        })
-        .catch(err => {
-            console.error('🔍 Scan error:', err);
-            alert('Không tìm thấy mã QR trong ảnh. Vui lòng thử ảnh khác.');
-            // Restart camera
-            setTimeout(() => {
-                initScanner();
-            }, 500);
-        });
+async function processImageFile(file) {
+    try {
+        if (!codeReader) {
+            codeReader = new ZXing.BrowserMultiFormatReader();
+        }
+        
+        // Create image element from file
+        const imageUrl = URL.createObjectURL(file);
+        const img = new Image();
+        
+        img.onload = async () => {
+            try {
+                const result = await codeReader.decodeFromImageElement(img);
+                console.log('✅ QR Code from image:', result.getText());
+                URL.revokeObjectURL(imageUrl);
+                onScanSuccess(result.getText());
+            } catch (err) {
+                console.error('🔍 Decode error:', err);
+                URL.revokeObjectURL(imageUrl);
+                alert('Không tìm thấy mã QR trong ảnh. Vui lòng thử ảnh khác.');
+                // Restart camera
+                setTimeout(() => {
+                    initScanner();
+                }, 500);
+            }
+        };
+        
+        img.onerror = () => {
+            URL.revokeObjectURL(imageUrl);
+            alert('Không thể đọc ảnh. Vui lòng thử lại.');
+        };
+        
+        img.src = imageUrl;
+        
+    } catch (err) {
+        console.error('📁 File processing error:', err);
+        alert('Có lỗi xảy ra khi xử lý ảnh. Vui lòng thử lại.');
+    }
 }
 
 /**
@@ -158,20 +220,11 @@ function onScanSuccess(decodedText) {
     console.log('✅ Scanned QR code');
     
     // Stop scanner
-    if (html5QrCode && html5QrCode.isScanning) {
-        html5QrCode.stop().catch(err => console.error('Error stopping:', err));
-    }
+    stopCamera();
     
     // Save scanned data and navigate to view page
     sessionStorage.setItem('scannedData', decodedText);
     navigate('view');
-}
-
-/**
- * Called on scan error (ignore - happens continuously while scanning)
- */
-function onScanError(error) {
-    // Ignore continuous scan errors
 }
 
 // Cleanup on page unload
