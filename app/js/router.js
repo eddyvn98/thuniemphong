@@ -5,7 +5,11 @@
 
 const routes = {
     '': 'renderHome',
-    'create': 'renderCreate',
+    'onboarding': 'renderOnboarding',
+    'editor': 'renderEditor',
+    'setup': 'renderSetup',
+    'countdown': 'renderCountdown',
+    'success': 'renderSuccess',
     'scan': 'renderScan',
     'view': 'renderView'
 };

@@ -114,6 +114,6 @@ function nextSlide() {
     } else {
         // Đã xem hết → lưu flag và chuyển đến editor
         localStorage.setItem('onboardingCompleted', 'true');
-        renderEditor();
+        navigate('editor');
     }
 }

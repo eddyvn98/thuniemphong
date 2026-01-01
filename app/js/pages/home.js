@@ -294,9 +294,9 @@ function handleCreateClick() {
     
     if (hasSeenOnboarding) {
         // Đã xem rồi → vào editor luôn
-        renderEditor();
+        navigate('editor');
     } else {
         // Chưa xem → show onboarding
-        renderOnboarding();
+        navigate('onboarding');
     }
 }

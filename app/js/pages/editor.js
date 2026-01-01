@@ -101,5 +101,5 @@ function goToSetup() {
     editorData.message = message;
     
     // Next step: Setup
-    renderSetup();
+    navigate('setup');
 }

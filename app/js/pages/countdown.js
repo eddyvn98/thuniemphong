@@ -129,11 +129,13 @@ async function proceedToSeal() {
         console.log('✅ Sealed successfully');
         
         // Show success screen
-        renderSuccess(qrData, setupData);
+        navigate('success');
+        // Render with data after navigation
+        setTimeout(() => renderSuccess(qrData, setupData), 100);
         
     } catch (error) {
         console.error('❌ Error sealing:', error);
         alert('Có lỗi xảy ra. Vui lòng thử lại.');
-        renderSetup();
+        navigate('setup');
     }
 }

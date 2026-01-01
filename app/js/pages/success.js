@@ -3,11 +3,27 @@
  * Hiển thị QR + thông tin + nút Lưu/Chia sẻ
  */
 
+let successData = {
+    qrData: null,
+    config: null
+};
+
 function renderSuccess(qrData, config) {
+    if (qrData) successData.qrData = qrData;
+    if (config) successData.config = config;
+    
+    const data = successData.qrData;
+    const conf = successData.config;
+    
+    if (!data || !conf) {
+        navigate('');
+        return;
+    }
+
     const container = document.getElementById('app-container');
     
     // Format date
-    const unlockDate = new Date(config.unlockDate);
+    const unlockDate = new Date(conf.unlockDate);
     const formattedDate = unlockDate.toLocaleDateString('vi-VN', {
         day: '2-digit',
         month: '2-digit',
@@ -40,7 +56,7 @@ function renderSuccess(qrData, config) {
                         <div class="bg-white p-6 rounded-2xl flex justify-center mb-6 shadow-inner" id="qrcode"></div>
                         
                         <!-- Password Display (if exists) -->
-                        ${config.usePassword ? `
+                        ${conf.usePassword ? `
                             <div class="space-y-2">
                                 <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Mật khẩu của bạn</label>
                                 <div class="flex items-center gap-3 p-4 bg-slate-100 rounded-xl">
@@ -127,7 +143,7 @@ function renderSuccess(qrData, config) {
     
     // Generate QR code
     const qrcodeElement = document.getElementById('qrcode');
-    generateQRCode(qrData, qrcodeElement);
+    generateQRCode(data, qrcodeElement);
 }
 
 // Store password for visibility toggle
@@ -139,7 +155,7 @@ function togglePasswordVisibility() {
     
     if (display.textContent === '••••••••') {
         // Show password
-        display.textContent = setupData.password;
+        display.textContent = successData.config.password;
         icon.innerHTML = `
             <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
             <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
@@ -236,13 +252,16 @@ function createNewLetter() {
     // Reset data
     editorData = { message: '', isLink: false };
     setupData = { unlockDate: null, password: '', usePassword: false, useBiometric: false };
+    successData = { qrData: null, config: null };
     
     // Go to editor
-    renderEditor();
+    navigate('editor');
 }
 
 function goHome() {
-    // Reset hash and render home
-    window.location.hash = '';
-    renderHome();
+    // Reset data
+    successData = { qrData: null, config: null };
+    
+    // Navigate to home
+    navigate('');
 }
