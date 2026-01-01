@@ -33,65 +33,62 @@ function renderSuccess(qrData, config) {
             <div class="p-6 space-y-8 max-w-2xl mx-auto">
                 
                 <!-- Capture Area (toàn bộ phần này sẽ được chụp) -->
-                <div id="capture-area">
+                <div id="capture-area" style="background-color: #f8fafc; padding: 40px 24px; border-radius: 0;">
                     <!-- Success Icon -->
-                    <div class="text-center space-y-4 pt-8">
-                        <div class="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-green-600">
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto 24px; background-color: rgba(34, 197, 94, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M20 6 9 17l-5-5"></path>
                             </svg>
                         </div>
                         
-                        <h1 class="text-3xl font-black text-slate-900">Đã Niêm Phong Xong!</h1>
-                        <p class="text-slate-500 max-w-sm mx-auto leading-relaxed">
+                        <h1 style="font-size: 32px; font-weight: 900; color: #0f172a; margin-bottom: 16px;">Đã Niêm Phong Xong!</h1>
+                        <p style="color: #64748b; font-size: 16px; line-height: 1.6; max-width: 400px; margin: 0 auto;">
                             Thư đã được niêm phong<br/>
-                            Truy cập <span class="font-semibold text-blue-600">thuniemphong2025.web.app</span> để mở
+                            Truy cập <span style="font-weight: 600; color: #2563eb;">thuniemphong2025.web.app</span> để mở
                         </p>
                     </div>
                     
-                    <!-- QR Card -->
-                    <div class="bg-gradient-to-b from-blue-50 to-slate-50 p-8 rounded-3xl border border-slate-200 shadow-sm">
-                        <!-- QR Code -->
-                        <div class="bg-white p-6 rounded-2xl flex justify-center mb-6 shadow-inner" id="qrcode"></div>
-                        
-                        <!-- Password Display (if exists) -->
-                        ${conf.usePassword ? `
-                            <div class="space-y-2">
-                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Mật khẩu của bạn</label>
-                                <div class="flex items-center gap-3 p-4 bg-slate-100 rounded-xl">
-                                    <span class="flex-1 font-mono text-lg" id="password-display">••••••••</span>
-                                    <button onclick="togglePasswordVisibility()" class="p-2 hover:bg-slate-200 rounded-lg transition-colors">
-                                        <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-600">
-                                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                    </button>
-                                </div>
+                    <!-- QR Code -->
+                    <div style="background-color: white; padding: 32px; border-radius: 16px; display: flex; justify-content: center; margin-bottom: 32px; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);" id="qrcode"></div>
+                    
+                    <!-- Password Display (if exists) -->
+                    ${conf.usePassword ? `
+                        <div style="background-color: white; padding: 20px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);">
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Mật khẩu của bạn</label>
+                            <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; background-color: #f1f5f9; border-radius: 8px;">
+                                <span style="flex: 1; font-family: monospace; font-size: 18px; color: #0f172a;" id="password-display">••••••••</span>
+                                <button onclick="togglePasswordVisibility()" style="padding: 8px; background-color: transparent; border: none; cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                                    <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
                             </div>
-                        ` : ''}
-                    </div>
+                        </div>
+                    ` : ''}
                     
                     <!-- Info Card -->
-                    <div class="p-5 bg-blue-50 border-2 border-blue-100 rounded-2xl space-y-3">
-                        <div class="flex items-center gap-2 text-blue-700 font-bold">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <div style="background-color: white; padding: 24px; border-radius: 16px; box-shadow: 0 1px 3px 0 rgba(0,0,0,0.1);">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path>
                             </svg>
-                            <span class="uppercase text-xs tracking-wider">Thông tin thư</span>
+                            <span style="font-size: 13px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.05em;">Thông tin thư</span>
                         </div>
                         
-                        <ul class="space-y-2 text-sm text-slate-700">
-                            <li class="flex items-start gap-2">
-                                <span class="text-blue-600 mt-0.5">•</span>
-                                <span>Lưu ảnh màn hình này hoặc tải ảnh QR về máy</span>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start;">
+                                <span style="color: #64748b; margin-top: 2px; flex-shrink: 0;">•</span>
+                                <span style="font-size: 15px; color: #475569; line-height: 1.5;">Lưu ảnh màn hình này hoặc tải ảnh QR về máy.</span>
                             </li>
-                            <li class="flex items-start gap-2">
-                                <span class="text-blue-600 mt-0.5">•</span>
-                                <span>Ngày mở thư: <strong>${formattedDate}</strong></span>
+                            <li style="display: flex; gap: 8px; margin-bottom: 12px; align-items: flex-start;">
+                                <span style="color: #64748b; margin-top: 2px; flex-shrink: 0;">•</span>
+                                <span style="font-size: 15px; color: #475569; line-height: 1.5;">Ngày mở thư: <strong style="color: #0f172a;">${formattedDate}</strong></span>
                             </li>
-                            <li class="flex items-start gap-2">
-                                <span class="text-orange-600 mt-0.5">•</span>
-                                <span class="text-orange-700 font-semibold">Ứng dụng không lưu lại thông tin này!</span>
+                            <li style="display: flex; gap: 8px; align-items: flex-start;">
+                                <span style="color: #ea580c; margin-top: 2px; flex-shrink: 0;">•</span>
+                                <span style="font-size: 15px; color: #ea580c; font-weight: 600; line-height: 1.5;">Ứng dụng không lưu lại thông tin này!</span>
                             </li>
                         </ul>
                     </div>
@@ -179,12 +176,16 @@ function downloadQRCard() {
         return;
     }
     
-    // Use html2canvas to capture the entire card
+    // Use html2canvas to capture the entire card with better settings
     html2canvas(captureArea, {
         backgroundColor: '#ffffff',
-        scale: 2, // High quality
+        scale: 3, // Higher quality for better rendering
         logging: false,
-        useCORS: true
+        useCORS: true,
+        allowTaint: false,
+        foreignObjectRendering: false,
+        imageTimeout: 0,
+        removeContainer: true
     }).then(canvas => {
         // Convert to blob and download
         canvas.toBlob(blob => {
@@ -194,7 +195,7 @@ function downloadQRCard() {
             link.href = url;
             link.click();
             URL.revokeObjectURL(url);
-        }, 'image/png');
+        }, 'image/png', 1.0);
     }).catch(err => {
         console.error('Error capturing:', err);
         alert('Có lỗi khi lưu ảnh. Vui lòng thử lại.');
