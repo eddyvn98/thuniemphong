@@ -19,10 +19,7 @@ const routes = {
  * @param {string} path - Route path (without #)
  */
 function navigate(path) {
-    // Stop camera if active
-    stopCamera();
-    
-    // Update hash
+    // Update hash (camera will be stopped by router)
     window.location.hash = path;
 }
 
@@ -30,6 +27,9 @@ function navigate(path) {
  * Router function - renders the current route
  */
 function router() {
+    // Stop camera before route change
+    stopCamera();
+    
     // Get hash without #
     const hash = window.location.hash.slice(1);
     
@@ -50,3 +50,20 @@ window.addEventListener('hashchange', router);
 
 // Initial render on page load
 window.addEventListener('DOMContentLoaded', router);
+
+// Stop camera when page visibility changes (user switches tabs)
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        stopCamera();
+    }
+});
+
+// Stop camera when user navigates away or closes tab
+window.addEventListener('pagehide', () => {
+    stopCamera();
+});
+
+// Backup cleanup on beforeunload
+window.addEventListener('beforeunload', () => {
+    stopCamera();
+});

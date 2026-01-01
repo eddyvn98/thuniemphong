@@ -10,7 +10,7 @@ let currentStream = null;
 /**
  * Stop all camera streams and cleanup
  */
-function stopCamera() {
+window.stopCamera = function stopCamera() {
     console.log('🛑 Stopping camera...');
     
     // Stop ZXing reader
@@ -226,8 +226,3 @@ function onScanSuccess(decodedText) {
     sessionStorage.setItem('scannedData', decodedText);
     navigate('view');
 }
-
-// Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-    stopCamera();
-});

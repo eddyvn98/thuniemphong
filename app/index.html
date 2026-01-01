@@ -33,9 +33,30 @@
         <main class="flex-grow flex flex-col" id="app-container">
             <!-- Content will be dynamically loaded here -->
         </main>
+        
+        <!-- Footer Signature -->
+        <footer class="border-t border-slate-100 bg-slate-50/80 backdrop-blur-sm py-3 px-4">
+            <div class="text-center space-y-1.5">
+                <div class="h-px w-16 mx-auto bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mb-1"></div>
+                <div class="flex items-center justify-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="5" width="18" height="14" rx="3" ry="3"></rect>
+                            <polyline points="4 7 12 12 20 7"></polyline>
+                        </svg>
+                    </div>
+                    <p class="text-xs text-slate-500 leading-tight">
+                        Designed & built by
+                        <span class="font-semibold text-blue-600">Eddy Labs</span>
+                    </p>
+                </div>
+                <p class="text-[10px] tracking-[0.18em] uppercase text-slate-400 leading-tight">Thư Niêm Phong • 2026</p>
+            </div>
+        </footer>
     </div>
     
     <!-- Core Libraries (load first) -->
+    <script src="js/app.js?v=5"></script>
     <script src="js/lib/format.js?v=4"></script>
     <script src="js/lib/crypto.js?v=4"></script>
     
@@ -43,7 +64,7 @@
     <script src="js/app-data.js?v=4"></script>
     
     <!-- Utilities -->
-    <script src="js/utils/camera.js?v=4"></script>
+    <script src="js/utils/camera.js?v=5"></script>
     <script src="js/utils/qr.js?v=4"></script>
     
     <!-- Pages -->
@@ -57,9 +78,8 @@
     <script src="js/pages/scan.js?v=4"></script>
     <script src="js/pages/view.js?v=4"></script>
     
-    <!-- Router & App -->
-    <script src="js/router.js?v=4"></script>
-    <script src="js/app.js?v=4"></script>
+    <!-- Router (uses stopCamera) -->
+    <script src="js/router.js?v=5"></script>
     
 </body>
 </html>

@@ -7,27 +7,30 @@ function renderHome() {
         <div class="flex-grow overflow-y-auto">
             
             <!-- Hero Section -->
-            <section class="min-h-screen flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-b from-blue-50/30 via-white to-white -z-10"></div>
-                
-                <div class="w-full max-w-2xl space-y-8 animate-fade-in">
+            <section class="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-gradient-to-b from-blue-50/70 via-white to-white">
+                <div class="w-full max-w-2xl space-y-8">
                     <!-- Logo -->
-                    <div class="relative">
-                        <div class="w-32 h-32 mx-auto rounded-full bg-slate-50 flex items-center justify-center border-4 border-white shadow-lg overflow-hidden">
-                            <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-white"></div>
-                            <div class="relative z-10 text-6xl">📮</div>
+                    <div class="relative mb-6">
+                        <div class="w-28 h-28 sm:w-32 sm:h-32 mx-auto rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl flex items-center justify-center">
+                            <!-- Clean envelope icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="5" width="18" height="14" rx="3" ry="3"></rect>
+                                <polyline points="4 7 12 12 20 7"></polyline>
+                                <path d="M9 10h0"></path>
+                                <path d="M15 10h0"></path>
+                            </svg>
                         </div>
                     </div>
-                    
+
                     <!-- Heading -->
-                    <div class="space-y-4">
-                        <h1 class="text-5xl font-black tracking-tight text-slate-900">Thư Niêm Phong</h1>
-                        <p class="text-2xl text-slate-600 font-medium">Gửi một lời nhắn cho tương lai</p>
-                        <p class="text-lg text-slate-400">Chỉ mở ra khi tới đúng lúc</p>
+                    <div class="space-y-3">
+                        <h1 class="text-4xl sm:text-5xl font-black tracking-tight text-slate-900">Thư Niêm Phong</h1>
+                        <p class="text-lg sm:text-2xl text-slate-600 font-medium">Gửi một lời nhắn cho tương lai</p>
+                        <p class="text-sm sm:text-lg text-slate-400">Chỉ mở ra khi tới đúng lúc</p>
                     </div>
-                    
+
                     <!-- CTA Buttons -->
-                    <div class="space-y-4 pt-4">
+                    <div class="space-y-4 pt-6">
                         <button onclick="handleCreateClick()" class="btn-primary shadow-xl shadow-blue-600/20 text-lg py-4">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M5 12h14"></path>
@@ -39,9 +42,9 @@ function renderHome() {
                             <span>Quét & Mở thư</span>
                         </button>
                     </div>
-                    
+
                     <!-- Scroll Down Hint -->
-                    <div class="pt-12 animate-bounce">
+                    <div class="pt-10">
                         <p class="text-xs text-slate-300 uppercase tracking-wider">Cuộn xuống để hiểu thêm</p>
                     </div>
                 </div>
