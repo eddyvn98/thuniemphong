@@ -128,10 +128,12 @@ async function proceedToSeal() {
         
         console.log('✅ Sealed successfully');
         
+        // Store data in successData before navigating
+        successData.qrData = qrData;
+        successData.config = setupData;
+        
         // Show success screen
         navigate('success');
-        // Render with data after navigation
-        setTimeout(() => renderSuccess(qrData, setupData), 100);
         
     } catch (error) {
         console.error('❌ Error sealing:', error);

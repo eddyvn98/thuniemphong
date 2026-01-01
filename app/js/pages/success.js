@@ -9,13 +9,16 @@ let successData = {
 };
 
 function renderSuccess(qrData, config) {
+    // Store data if provided as parameters
     if (qrData) successData.qrData = qrData;
     if (config) successData.config = config;
     
     const data = successData.qrData;
     const conf = successData.config;
     
+    // If no data, redirect to home
     if (!data || !conf) {
+        console.warn('No success data available, redirecting to home');
         navigate('');
         return;
     }
