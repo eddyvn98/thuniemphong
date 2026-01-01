@@ -39,23 +39,78 @@ function stopCamera() {
  * Initialize QR code scanner with camera
  */
 function initScanner() {
+    // Check if Html5Qrcode is available
+    if (typeof Html5Qrcode === 'undefined') {
+        console.error('❌ Html5Qrcode library not loaded');
+        alert('Thư viện quét QR chưa được tải. Vui lòng tải lại trang.');
+        return;
+    }
+    
+    const readerElement = document.getElementById("reader");
+    if (!readerElement) {
+        console.error('❌ Reader element not found');
+        return;
+    }
+    
     html5QrCode = new Html5Qrcode("reader");
     
     const config = {
         fps: 10,
         qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0
+        aspectRatio: 1.0,
+        disableFlip: false,
+        rememberLastUsedCamera: true
     };
     
+    // Request camera with back camera preference
+    const cameraConfig = { facingMode: { ideal: "environment" } };
+    
     html5QrCode.start(
-        { facingMode: "environment" },
+        cameraConfig,
         config,
         onScanSuccess,
         onScanError
     ).catch(err => {
-        console.error('📷 Camera error:', err);
-        alert('Không thể truy cập camera. Vui lòng cho phép quyền camera hoặc chọn ảnh từ thư viện.');
+        console.error('📷 Camera start error:', err);
+        
+        // Try to get available cameras and use the first one
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length > 0) {
+                console.log('📷 Found cameras:', devices.length);
+                // Use the last camera (usually back camera on mobile)
+                const cameraId = devices[devices.length - 1].id;
+                html5QrCode.start(
+                    cameraId,
+                    config,
+                    onScanSuccess,
+                    onScanError
+                ).catch(err2 => {
+                    console.error('📷 Camera start error (fallback):', err2);
+                    showCameraError();
+                });
+            } else {
+                showCameraError();
+            }
+        }).catch(err2 => {
+            console.error('📷 Get cameras error:', err2);
+            showCameraError();
+        });
     });
+}
+
+/**
+ * Show camera error message
+ */
+function showCameraError() {
+    const readerElement = document.getElementById("reader");
+    if (readerElement) {
+        readerElement.innerHTML = `
+            <div class="p-8 text-center text-white">
+                <p class="mb-4">Không thể truy cập camera</p>
+                <p class="text-sm text-white/70">Vui lòng cho phép quyền camera hoặc chọn ảnh từ thư viện bên dưới</p>
+            </div>
+        `;
+    }
 }
 
 /**
