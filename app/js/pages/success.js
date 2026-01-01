@@ -3,11 +3,6 @@
  * Hiển thị QR + thông tin + nút Lưu/Chia sẻ
  */
 
-let successData = {
-    qrData: null,
-    config: null
-};
-
 function renderSuccess(qrData, config) {
     // Store data if provided as parameters
     if (qrData) successData.qrData = qrData;
@@ -48,8 +43,9 @@ function renderSuccess(qrData, config) {
                         </div>
                         
                         <h1 class="text-3xl font-black text-slate-900">Đã Niêm Phong Xong!</h1>
-                        <p class="text-slate-500 max-w-sm mx-auto">
-                            Thông điệp đã được khóa chặt vào mã QR. Lưu lại để mở trong tương lai.
+                        <p class="text-slate-500 max-w-sm mx-auto leading-relaxed">
+                            Thư đã được niêm phong<br/>
+                            Truy cập <span class="font-semibold text-blue-600">thuniemphong2025.web.app</span> để mở
                         </p>
                     </div>
                     

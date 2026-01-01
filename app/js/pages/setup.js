@@ -3,13 +3,6 @@
  * Chọn ngày mở + mật khẩu + biometric
  */
 
-let setupData = {
-    unlockDate: null,
-    password: '',
-    usePassword: false,
-    useBiometric: false
-};
-
 function renderSetup() {
     const container = document.getElementById('app-container');
     

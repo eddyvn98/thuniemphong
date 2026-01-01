@@ -17,9 +17,16 @@ function renderView() {
         // Deserialize and validate
         const sealed = deserializeSealedQR(scannedData);
         
-        // Check if we need password
-        // We always need to prompt for password (even if empty)
-        renderPasswordPrompt(sealed);
+        // Check if password is required (hasPassword is stored in sealed data)
+        const needsPassword = sealed.hasPassword || false;
+        
+        if (!needsPassword) {
+            // No password needed - try to unseal directly
+            attemptDirectUnseal(sealed);
+        } else {
+            // Password required - show prompt
+            renderPasswordPrompt(sealed);
+        }
         
     } catch (error) {
         console.error('❌ Invalid QR code:', error);
@@ -107,6 +114,39 @@ async function attemptUnseal() {
             alert('Mật khẩu không đúng!');
         } else {
             alert('Có lỗi xảy ra. Vui lòng thử lại.');
+        }
+    }
+}
+
+/**
+ * Attempt direct unseal without password prompt (for no-password letters)
+ */
+async function attemptDirectUnseal(sealed) {
+    try {
+        const currentTime = new Date();
+        
+        console.log('🔓 Attempting direct unseal (no password)...');
+        
+        // Unseal without password
+        const message = await unsealMessage(
+            sealed,
+            undefined,
+            currentTime
+        );
+        
+        console.log('✅ Message unsealed successfully');
+        
+        // Show decrypted message
+        renderDecryptedMessage(message, sealed);
+        
+    } catch (error) {
+        console.error('❌ Unseal error:', error);
+        
+        if (error.code === 'NOT_YET_OPENABLE') {
+            renderTimeLocked(error.unlockDate, error.daysRemaining);
+        } else {
+            // If error, fallback to password prompt
+            renderPasswordPrompt(sealed);
         }
     }
 }

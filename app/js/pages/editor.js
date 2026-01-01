@@ -3,11 +3,6 @@
  * User nhập nội dung cần mã hóa
  */
 
-let editorData = {
-    message: '',
-    isLink: false
-};
-
 function renderEditor() {
     const container = document.getElementById('app-container');
     container.innerHTML = `

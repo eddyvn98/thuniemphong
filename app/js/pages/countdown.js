@@ -7,7 +7,7 @@ let countdownValue = 3;
 let countdownInterval = null;
 let isHolding = false;
 
-function renderCountdownWarning() {
+function renderCountdown() {
     countdownValue = 3;
     isHolding = false;
     

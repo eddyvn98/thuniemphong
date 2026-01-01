@@ -89,6 +89,7 @@ async function sealMessage(message, unlockDate, password) {
         kdf: 'PBKDF2-SHA256',
         cipher: 'AES-256-GCM',
         unlockDate: unlockDate.toISOString(),
+        hasPassword: !!(password && password.length > 0),
         salt: arrayBufferToBase64(salt),
         iv: arrayBufferToBase64(iv),
         payload: arrayBufferToBase64(encrypted) // ct + tag (16 bytes cuối)
